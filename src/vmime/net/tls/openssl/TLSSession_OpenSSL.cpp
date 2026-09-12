@@ -66,6 +66,18 @@ TLSSession_OpenSSL::TLSSession_OpenSSL(
 
 	m_sslctx = SSL_CTX_new(SSLv23_client_method());
 	SSL_CTX_set_options(m_sslctx, SSL_OP_ALL | SSL_OP_NO_SSLv2);
+
+	// SSL_OP_NO_SSLv2 alone still leaves SSLv3 and TLS 1.0/1.1 reachable, so a
+	// permissive system OpenSSL configuration could negotiate a protocol that
+	// has been considered broken for years. Mail credentials travel over these
+	// sessions, so pin a floor of TLS 1.2 rather than inheriting whatever the
+	// host happens to allow.
+#if defined(SSL_CTX_set_min_proto_version) || OPENSSL_VERSION_NUMBER >= 0x10100000L
+	SSL_CTX_set_min_proto_version(m_sslctx, TLS1_2_VERSION);
+#else
+	SSL_CTX_set_options(m_sslctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+#endif
+
 	SSL_CTX_set_mode(m_sslctx, SSL_MODE_AUTO_RETRY);
 	SSL_CTX_set_cipher_list(m_sslctx, m_props->getCipherSuite().c_str());
 	SSL_CTX_set_session_cache_mode(m_sslctx, SSL_SESS_CACHE_OFF);
