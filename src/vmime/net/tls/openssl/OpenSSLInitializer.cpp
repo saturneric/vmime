@@ -123,9 +123,12 @@ void OpenSSLInitializer::initialize() {
 
 #if OPENSSL_VERSION_NUMBER >=0x10100000L
 	vmime_uint64 flags = OPENSSL_INIT_LOAD_SSL_STRINGS | OPENSSL_INIT_LOAD_CONFIG;
+	// OpenSSL 4.0 removed the ENGINE API along with these flags
+#if defined(OPENSSL_INIT_ENGINE_OPENSSL) && defined(OPENSSL_INIT_ENGINE_ALL_BUILTIN)
 	if (!isFIPSenabled) {
 		flags |= OPENSSL_INIT_ENGINE_OPENSSL | OPENSSL_INIT_ENGINE_ALL_BUILTIN;
 	}
+#endif
 	OPENSSL_init_ssl(flags, NULL);
 #endif
 
